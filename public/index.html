@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>J_Chatbot AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="https://i.postimg.cc/ZKxGMX8g/Chat-GPT-Image-Nov-6-2025-07-49-59-PM.png" />
+
+<style>
+  :root{ --bg:#0d0d0d; --text:#fff; --box:#181818; --accent:#33ffc4; --user-msg:#0f5ac0; }
+  body.light { --bg:#f2f2f2; --text:#000; --box:#fff; --accent:#00bfa5; --user-msg:#007bff; }
+  
+  body {
+    background:var(--bg); color:var(--text); font-family:Poppins, sans-serif; 
+    margin:0; padding:0; display:flex; flex-direction:column; align-items:center; transition:.3s;
+  }
+
+  /* Rotating Tip Animation */
+  .rotating-tip {
+    font-size: 0.85em; color: var(--accent); margin-top: 15px; overflow: hidden; white-space: nowrap;
+    width: 100%; position: relative; height: 20px;
+  }
+  .rotating-tip b { display: inline-block; animation: scrollText 15s linear infinite; }
+  @keyframes scrollText {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+  }
+
+  /* Header & Containers */
+  header {
+    background:var(--box); width:100%; display:flex; align-items:center; 
+    justify-content:space-between; padding:10px 20px; position:sticky; top:0; z-index:100; box-sizing: border-box;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  }
+  .logo-container { display: flex; align-items: center; gap: 12px; }
+  .header-logo { height: 40px; width: 40px; border-radius: 50%; border: 2px solid var(--accent); }
+  .icons{display:flex;gap:12px;align-items:center;}
+  .icon-btn{cursor:pointer;font-size:1.35em;color:var(--text);padding:6px; border-radius:6px; transition:.2s;}
+  .icon-btn:hover{color:var(--accent); background: rgba(255,255,255,0.05);}
+
+  .container{
+    background:var(--box); width:95%; max-width:800px; border-radius:15px;
+    margin: 20px 0; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.5);
+  }
+  .history{ height:500px; overflow-y:auto; background:var(--bg); border-radius:12px; padding:15px; border:1px solid rgba(255,255,255,0.05); scroll-behavior: smooth;}
+  
+  /* Message Bubbles & Actions */
+  .message{margin:18px 0; display:flex; flex-direction:column; position: relative;}
+  .message.user { align-items: flex-end; }
+  .message.assistant { align-items: flex-start; }
+  
+  .bubble { 
+    max-width:85%; padding:12px 16px; border-radius:15px; line-height:1.6; font-size: 0.95em; 
+    word-wrap: break-word; white-space: pre-wrap; position: relative;
+  }
+  .bubble.user { background: var(--user-msg); color:#fff; border-bottom-right-radius: 2px; }
+  .bubble.assistant { background:rgba(255,255,255,.07); border-left:4px solid var(--accent); border-bottom-left-radius: 2px; }
+
+  .msg-actions { display: flex; gap: 10px; margin-top: 5px; opacity: 0.6; transition: 0.3s; font-size: 0.8em; }
+  .message:hover .msg-actions { opacity: 1; }
+  .action-btn { cursor: pointer; transition: 0.2s; }
+  .action-btn:hover { color: var(--accent); transform: scale(1.2); }
+
+  /* Code Blocks Formatting */
+  pre {
+    background: #000; color: #33ffc4; padding: 12px; border-radius: 8px; 
+    overflow-x: auto; font-family: 'Fira Code', monospace; font-size: 0.85em; border: 1px solid #333;
+  }
+
+  /* Input Area */
+  .input-container{display:flex; margin-top:14px; gap:8px;}
+  textarea{ 
+    flex:1; padding:12px; border-radius:8px; background:#222; color:#fff; 
+    border:1px solid #444; resize:none; min-height:50px; outline: none;
+  }
+  textarea:focus { border-color: var(--accent); }
+  button{ background:var(--accent); border:none; color:#000; padding:10px 18px; border-radius:8px; cursor:pointer; font-weight:700; transition:.2s; }
+  button:hover{ transform: translateY(-2px); box-shadow: 0 4px 12px rgba(51,255,196,0.3); }
+  .btn-ghost{ background:rgba(255,255,255,0.05); border:1px solid #444; color:var(--text); }
+
+  /* Modals */
+  .modal{
+    display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
+    background:var(--box); padding:20px; border-radius:12px; width:90%; max-width:400px;
+    z-index:1000; border:1px solid var(--accent);
+  }
+  .close-btn{ float:right; cursor:pointer; font-size:1.5em; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="icons">
+    <span class="icon-btn" id="historyIcon" title="Full History">📜</span>
+    <span class="icon-btn" id="settingsIcon" title="Settings">⚙️</span>
+    <span class="icon-btn" id="summaryBtn" title="Summarize Chat">📝</span>
+  </div>
+  <div class="logo-container">
+    <img src="https://i.postimg.cc/ZKxGMX8g/Chat-GPT-Image-Nov-6-2025-07-49-59-PM.png" alt="Logo" class="header-logo">
+    <h1>JULES AI</h1>
+  </div>
+  <span class="icon-btn" id="themeToggle">🌙</span>
+</header>
+
+<div class="container">
+  <div class="history" id="history"></div>
+  
+  <div class="input-container">
+    <textarea id="userInput" placeholder="Ask Jules something..."></textarea>
+    <button id="sendBtn">Send</button>
+  </div>
+
+  <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+    <button class="btn-ghost" id="micBtn">🎤 Mic</button>
+    <button class="btn-ghost" id="voiceBtn">🔊 Speak Last</button>
+    <button class="btn-ghost" id="toggleSoundBtn">🔔 Sound: ON</button>
+    <button class="btn-ghost" id="clearBtn">🗑️ Clear Chat</button>
+  </div>
+
+  <div class="rotating-tip">
+    <b>Tip: For more info and help contact: 0791058970 JULES •</b>
+  </div>
+</div>
+
+<div class="modal" id="settingsModal">
+  <span class="close-btn" id="closeSettings">×</span>
+  <h3>Settings</h3>
+  <label>Speech Speed: <span id="vrVal">1.0</span></label>
+  <input type="range" id="voiceRate" min="0.5" max="2" step="0.1" value="1.0" style="width:100%;">
+  <button id="clearHist" style="background:#ff4c4c; color:white; width:100%; margin-top:15px; border-radius:5px; padding:10px;">Wipe Local Storage</button>
+</div>
+
+<script>
+
+const STORAGE_KEY = 'jules_history_v3';
+
+let chatHistory = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let settings = { sound: true, rate: 1.0 };
+const historyDiv = document.getElementById('history');
+const userInput = document.getElementById('userInput');
+
+// --- Core Functions ---
+
+function renderChat() {
+  historyDiv.innerHTML = chatHistory.map((m, index) => `
+    <div class="message ${m.role}">
+      <div class="bubble ${m.role}">${formatResponse(m.content)}</div>
+      <div class="msg-actions">
+        <span class="action-btn" onclick="copyMsg(${index})">📋</span>
+        <span class="action-btn" onclick="replyMsg(${index})">💬</span>
+        <span class="action-btn" onclick="editMsg(${index})">✏️</span>
+        <span class="action-btn" onclick="deleteMsg(${index})">❌</span>
+      </div>
+    </div>
+  `).join('');
+  historyDiv.scrollTop = historyDiv.scrollHeight;
+}
+
+// Format logic for aesthetic spacing and code blocks
+function formatResponse(text) {
+  // Replace code blocks
+  text = text.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  // Add spacing for lists or paragraphs
+  return text.trim();
+}
+
+async function sendMessage(overrideText = null) {
+  const text = overrideText || userInput.value.trim();
+  if (!text) return;
+
+  if(!overrideText) chatHistory.push({ role: 'user', content: text });
+  userInput.value = '';
+  renderChat();
+
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'message assistant';
+  typingDiv.innerHTML = '<div class="bubble assistant">J_ai thinking...</div>';
+  historyDiv.appendChild(typingDiv);
+
+  try {
+   const response = await fetch("/api/chat", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    messages: chatHistory.slice(-12)
+  })
+});
+
+    const data = await response.json();
+    historyDiv.removeChild(typingDiv);
+    
+    const reply = data.reply;
+    chatHistory.push({ role: 'assistant', content: reply });
+    saveHistory();
+    renderChat();
+    if(settings.sound) speak(reply);
+  } catch (err) {
+    alert("API Error. Please check your key.");
+  }
+}
+
+// --- Message Actions ---
+
+window.copyMsg = (i) => {
+  navigator.clipboard.writeText(chatHistory[i].content);
+  alert("Copied to clipboard!");
+};
+
+window.replyMsg = (i) => {
+  userInput.value = `Replying to: "${chatHistory[i].content.substring(0,30)}..." -> `;
+  userInput.focus();
+};
+
+window.editMsg = (i) => {
+  const newText = prompt("Edit message:", chatHistory[i].content);
+  if(newText) {
+    chatHistory[i].content = newText;
+    saveHistory();
+    renderChat();
+  }
+};
+
+window.deleteMsg = (i) => {
+  chatHistory.splice(i, 1);
+  saveHistory();
+  renderChat();
+};
+
+// --- Features ---
+
+// Summarize Ability
+document.getElementById('summaryBtn').onclick = async () => {
+  if(chatHistory.length < 2) return alert("Not enough chat to summarize.");
+  sendMessage("Please provide a concise summary of our conversation so far.");
+};
+
+// Mic Functionality
+const recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (recognition) {
+  const rec = new recognition();
+  document.getElementById('micBtn').onclick = () => {
+    rec.start();
+    document.getElementById('micBtn').textContent = "Listening...";
+  };
+  rec.onresult = (e) => {
+    userInput.value = e.results[0][0].transcript;
+    document.getElementById('micBtn').textContent = "🎤 Mic";
+  };
+}
+
+// Sound Controls
+document.getElementById('toggleSoundBtn').onclick = function() {
+  settings.sound = !settings.sound;
+  this.textContent = settings.sound ? "🔔 Sound: ON" : "🔕 Sound: OFF";
+};
+
+document.getElementById('voiceBtn').onclick = () => {
+  const lastAssistantMsg = [...chatHistory].reverse().find(m => m.role === 'assistant');
+  if(lastAssistantMsg) speak(lastAssistantMsg.content);
+};
+
+function speak(t) {
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(t);
+  u.rate = settings.rate;
+  window.speechSynthesis.speak(u);
+}
+
+// Global Logic
+function saveHistory() { localStorage.setItem(STORAGE_KEY, JSON.stringify(chatHistory)); }
+document.getElementById('clearBtn').onclick = () => { chatHistory = []; saveHistory(); renderChat(); };
+document.getElementById('themeToggle').onclick = () => {
+  document.body.classList.toggle('light');
+  document.getElementById('themeToggle').textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
+};
+userInput.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }});
+document.getElementById('sendBtn').onclick = () => sendMessage();
+document.getElementById('settingsIcon').onclick = () => document.getElementById('settingsModal').style.display = 'block';
+document.getElementById('closeSettings').onclick = () => document.getElementById('settingsModal').style.display = 'none';
+
+renderChat();
+</script>
+</body>
+</html>
